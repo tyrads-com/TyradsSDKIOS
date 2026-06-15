@@ -27,44 +27,43 @@ private struct OfferwallTab: View {
 
     var body: some View {
         NavigationView {
-            List {
-                // Environment
-                Section("Environment") {
-                    Picker("Config", selection: $vm.selectedConfig) {
-                        ForEach(vm.configOptions) { opt in
-                            Text(opt.label).tag(opt.value)
+            ScrollView {
+                VStack(spacing: 16) {
+                    FormSection(title: "Environment") {
+                        Picker("Config", selection: $vm.selectedConfig) {
+                            ForEach(vm.configOptions) { opt in
+                                Text(opt.label).tag(opt.value)
+                            }
                         }
+                        .pickerStyle(.segmented)
+                        .onChange(of: vm.selectedConfig) { vm.onConfigChanged($0) }
                     }
-                    .pickerStyle(.segmented)
-                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
-                    .onChange(of: vm.selectedConfig) { vm.onConfigChanged($0) }
-                }
 
-                // Credentials
-                Section("Credentials") {
-                    LabeledField("API Key", text: $vm.apiKey)
-                    LabeledField("API Secret", text: $vm.apiSecret)
-                    LabeledField("Encryption Key", text: $vm.encKey)
-                }
+                    FormSection(title: "Credentials") {
+                        PlainField("API Key", text: $vm.apiKey)
+                        Divider()
+                        PlainField("API Secret", text: $vm.apiSecret)
+                        Divider()
+                        PlainField("Encryption Key", text: $vm.encKey)
+                    }
 
-                // Placement
-                Section("Placement") {
-                    LabeledField("Engagement ID", text: $vm.engagementId)
-                    LabeledField("Placement ID", text: $vm.placementId)
-                }
+                    FormSection(title: "Placement") {
+                        PlainField("Engagement ID", text: $vm.engagementId)
+                        Divider()
+                        PlainField("Placement ID", text: $vm.placementId)
+                    }
 
-                // User
-                Section("User") {
-                    LabeledField("User ID (empty = default)", text: $vm.userId)
-                    AgeRow(selected: $vm.selectedAge)
-                    GenderRow(selected: $vm.selectedGender, label: vm.genderLabel)
-                }
+                    FormSection(title: "User") {
+                        PlainField("User ID (empty = default)", text: $vm.userId)
+                        Divider()
+                        AgeRow(selected: $vm.selectedAge)
+                        Divider()
+                        GenderRow(selected: $vm.selectedGender, label: vm.genderLabel)
+                    }
 
-                // CTA
-                Section {
                     Button(action: vm.showOfferwall) {
-                        HStack {
-                            Spacer()
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12).fill(teal)
                             if vm.isLoading {
                                 ProgressView().tint(.white)
                             } else {
@@ -72,16 +71,15 @@ private struct OfferwallTab: View {
                                     .font(.headline)
                                     .foregroundColor(.white)
                             }
-                            Spacer()
                         }
-                        .padding(.vertical, 6)
+                        .frame(height: 50)
                     }
-                    .listRowBackground(teal)
                     .disabled(vm.isLoading)
                 }
+                .padding(16)
             }
             .navigationTitle("Tyrads iOS SDK")
-            .navigationBarTitleDisplayMode(.automatic)
+            .navigationBarTitleDisplayMode(.inline)
         }
         .navigationViewStyle(.stack)
     }
@@ -116,7 +114,7 @@ private struct WidgetTab: View {
             .cornerRadius(9)
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
-            
+
             Spacer()
 
             Tyrads.instance.topOffersWidget(widgetStyle: vm.widgetStyle)
@@ -126,29 +124,49 @@ private struct WidgetTab: View {
             Spacer()
         }
         .background(Color(.systemBackground))
+        .onAppear { vm.initializeIfNeeded() }
     }
 }
 
-// MARK: - List Row Components
+// MARK: - Shared Components
 
-private struct LabeledField: View {
-    let label: String
+private struct FormSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 6)
+            VStack(spacing: 0) {
+                content()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(.secondarySystemGroupedBackground))
+            .cornerRadius(12)
+        }
+    }
+}
+
+private struct PlainField: View {
+    let placeholder: String
     @Binding var text: String
 
-    init(_ label: String, text: Binding<String>) {
-        self.label = label
+    init(_ placeholder: String, text: Binding<String>) {
+        self.placeholder = placeholder
         self._text = text
     }
 
     var body: some View {
-        HStack {
-            Text(label)
-                .foregroundColor(.secondary)
-                .frame(width: 130, alignment: .leading)
-            TextField(label, text: $text)
-                .autocapitalization(.none)
-                .autocorrectionDisabled()
-        }
+        TextField(placeholder, text: $text)
+            .padding(.vertical, 4)
+            .autocapitalization(.none)
+            .autocorrectionDisabled()
     }
 }
 
@@ -157,23 +175,21 @@ private struct AgeRow: View {
 
     var body: some View {
         HStack {
-            Text("Age").foregroundColor(.secondary).frame(width: 130, alignment: .leading)
+            Text("Age").foregroundColor(.secondary)
+            Spacer()
             Menu {
                 Button("Any") { selected = nil }
                 ForEach(18...80, id: \.self) { age in
                     Button("\(age)") { selected = age }
                 }
             } label: {
-                HStack {
-                    Text(selected.map { "\($0)" } ?? "Any")
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                HStack(spacing: 4) {
+                    Text(selected.map { "\($0)" } ?? "Any").foregroundColor(.primary)
+                    Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundColor(.secondary)
                 }
             }
         }
+        .padding(.vertical, 4)
     }
 }
 
@@ -183,22 +199,20 @@ private struct GenderRow: View {
 
     var body: some View {
         HStack {
-            Text("Gender").foregroundColor(.secondary).frame(width: 130, alignment: .leading)
+            Text("Gender").foregroundColor(.secondary)
+            Spacer()
             Menu {
                 Button("Any")    { selected = nil }
                 Button("Male")   { selected = 1 }
                 Button("Female") { selected = 2 }
             } label: {
-                HStack {
-                    Text(selected == nil ? "Any" : label)
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                HStack(spacing: 4) {
+                    Text(selected == nil ? "Any" : label).foregroundColor(.primary)
+                    Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundColor(.secondary)
                 }
             }
         }
+        .padding(.vertical, 4)
     }
 }
 

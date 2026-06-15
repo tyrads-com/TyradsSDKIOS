@@ -64,7 +64,6 @@ final class ContentViewModel: ObservableObject {
         apiSecret = keys.apiSecret
         encKey = keys.encKey
         isInitialized = false
-        initializeTyrads()
     }
 
     func loadStoredAndInit() {
@@ -76,6 +75,10 @@ final class ContentViewModel: ObservableObject {
         apiKey = keys.apiKey
         apiSecret = keys.apiSecret
         encKey = keys.encKey
+    }
+
+    func initializeIfNeeded() {
+        guard !isInitialized else { return }
         initializeTyrads()
     }
 
@@ -133,11 +136,7 @@ final class ContentViewModel: ObservableObject {
     func showOfferwall() {
         guard !isLoading else { return }
         isLoading = true
-
-        if !isInitialized {
-            initializeTyrads()
-        }
-
+        initializeTyrads()
         Task {
             _ = await Tyrads.instance.waitAndCheck()
             isLoading = false

@@ -11,6 +11,8 @@ struct TyradsExampleApp: App {
         // causing content to be laid out from y=0 (behind nav bar) on the first
         // render pass, then corrected on the second — visible as a layout jump.
         // Force opaque appearance so the content area is always offset correctly.
+        UIScrollView.appearance().delaysContentTouches = false
+
         let navAppearance = UINavigationBarAppearance()
         navAppearance.configureWithOpaqueBackground()
         UINavigationBar.appearance().standardAppearance = navAppearance
