@@ -8,6 +8,30 @@ enum NetworkError: Error {
     case unknown(Error)
 }
 
+extension NetworkError {
+    struct APIErrorInfo {
+        let title: String
+        let message: String
+    }
+
+    /// Parses title + message from a standard Tyrads API error body.
+    /// Body shape: `{ "code": Int, "message": String, "description": String? }`
+    static func apiErrorInfo(from data: Data?, statusCode: Int) -> APIErrorInfo {
+        struct ErrorBody: Decodable {
+            let code: Int?
+            let message: String?
+            let errorCode: String?
+        }
+        if let data, let body = try? JSONDecoder().decode(ErrorBody.self, from: data) {
+            return APIErrorInfo(
+                title: body.message ?? "\(statusCode)",
+                message: body.errorCode ?? ""
+            )
+        }
+        return APIErrorInfo(title: "\(statusCode)", message: "")
+    }
+}
+
 final class TyradsNetworkManager: TyradsNetworkClient, @unchecked Sendable {
     static let shared = TyradsNetworkManager()
 
@@ -89,16 +113,16 @@ final class TyradsNetworkManager: TyradsNetworkClient, @unchecked Sendable {
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
-//            print("===================================")
-//                print("URL: \(url.absoluteString)")
-//                print("Status Code: \(httpResponse.statusCode)")
-//
-//                if let bodyString = String(data: data, encoding: .utf8) {
-//                    print("Response:")
-//                    print(bodyString)
-//                }
-//
-//                print("===================================")
+            print("===================================")
+                print("URL: \(url.absoluteString)")
+                print("Status Code: \(httpResponse.statusCode)")
+
+                if let bodyString = String(data: data, encoding: .utf8) {
+                    print("Response:")
+                    print(bodyString)
+                }
+
+                print("===================================")
             throw NetworkError.httpError(statusCode: httpResponse.statusCode, data: data)
         }
 

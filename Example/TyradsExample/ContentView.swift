@@ -80,6 +80,14 @@ private struct OfferwallTab: View {
             }
             .navigationTitle("Tyrads iOS SDK")
             .navigationBarTitleDisplayMode(.inline)
+            .alert(vm.errorTitle ?? "Login Failed", isPresented: Binding(
+                get: { vm.errorMessage != nil },
+                set: { if !$0 { vm.errorTitle = nil; vm.errorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(vm.errorMessage ?? "")
+            }
         }
         .navigationViewStyle(.stack)
     }
@@ -124,7 +132,6 @@ private struct WidgetTab: View {
             Spacer()
         }
         .background(Color(.systemBackground))
-        .onAppear { vm.initializeIfNeeded() }
     }
 }
 

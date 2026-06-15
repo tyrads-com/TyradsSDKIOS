@@ -71,6 +71,9 @@ public final class Tyrads {
     private var callbacks: [TyradsCallbackType: TyradsCallback] = [:]
     private var webViewController: TyradsWebViewController?
 
+    /// Error info from the last failed `loginUser()` call. Nil when login succeeds.
+    public private(set) var lastLoginError: (title: String, message: String)?
+
     // MARK: - Init
 
     /// Call once from your AppDelegate or SceneDelegate before any other SDK method.
@@ -95,6 +98,10 @@ public final class Tyrads {
         }
 
         isInitCalled = true
+        continuationLock.withLock {
+            _initializationCompleted = false
+            _isLoginSuccessful = false
+        }
         self.apiKey = apiKey
         self.apiSecret = apiSecret
         self.engagementId = engagementId
@@ -154,6 +161,7 @@ public final class Tyrads {
                 colorPremiumFg = colorPremium?.fontColorForBackground()
             }
 
+            lastLoginError = nil
             track(TyradsActivity.initialized)
             print("[TyradsSDK] Login successful. token=\(session.token.prefix(20))...")
 
@@ -170,6 +178,12 @@ public final class Tyrads {
             return isLoginSuccessful
         } catch {
             print("[TyradsSDK] Login error: \(error)")
+            if case NetworkError.httpError(let code, let data) = error {
+                let info = NetworkError.apiErrorInfo(from: data, statusCode: code)
+                lastLoginError = (title: info.title, message: info.message)
+            } else {
+                lastLoginError = (title: "Login Failed", message: error.localizedDescription)
+            }
             resumeWaiters(result: false)
             return false
         }

@@ -32,6 +32,8 @@ final class ContentViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isInitialized = false
     @Published var widgetIsSlider: Bool = true
+    @Published var errorTitle: String?
+    @Published var errorMessage: String?
     var widgetStyle: TyradsPremiumWidgetStyle { widgetIsSlider ? .sliderCards : .list }
 
     private let prefs = UserDefaults.standard
@@ -136,10 +138,18 @@ final class ContentViewModel: ObservableObject {
     func showOfferwall() {
         guard !isLoading else { return }
         isLoading = true
+        errorTitle = nil
+        errorMessage = nil
         initializeTyrads()
         Task {
-            _ = await Tyrads.instance.waitAndCheck()
+            let ok = await Tyrads.instance.waitAndCheck()
             isLoading = false
+            guard ok else {
+                let err = Tyrads.instance.lastLoginError
+                errorTitle = err?.title ?? "Login Failed"
+                errorMessage = err?.message ?? ""
+                return
+            }
             try? await Tyrads.instance.showOffers()
         }
     }

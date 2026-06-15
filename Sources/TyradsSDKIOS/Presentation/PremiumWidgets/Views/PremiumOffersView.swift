@@ -1,5 +1,16 @@
 import SwiftUI
 
+private struct TyradsTopRoundedShape: Shape {
+    let radius: CGFloat
+    func path(in rect: CGRect) -> Path {
+        Path(UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: [.topLeft, .topRight],
+            cornerRadii: CGSize(width: radius, height: radius)
+        ).cgPath)
+    }
+}
+
 public enum TyradsPremiumWidgetStyle {
     case list
     case sliderCards
@@ -376,7 +387,7 @@ struct TyradsOfferSlideCardView: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 120)
-            .clipped()
+            .mask(TyradsTopRoundedShape(radius: 16))
             .overlay(alignment: .topTrailing) {
                 if offer.campaignPremium {
                     Image.tyradsTemplate("diamond")

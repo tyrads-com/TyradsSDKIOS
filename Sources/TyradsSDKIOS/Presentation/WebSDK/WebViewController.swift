@@ -23,6 +23,8 @@ final class TyradsWebViewController: UIViewController, WKScriptMessageHandler {
                         window.webkit.messageHandlers.tyradsLog.postMessage(level + ': ' + msg);
                     } catch(e) {}
                 }
+                var origLog = console.log;
+                console.log = function() { send('LOG', arguments); origLog && origLog.apply(console, arguments); };
                 var origError = console.error;
                 console.error = function() { send('ERROR', arguments); origError && origError.apply(console, arguments); };
                 var origWarn = console.warn;
@@ -33,6 +35,43 @@ final class TyradsWebViewController: UIViewController, WKScriptMessageHandler {
                 window.addEventListener('unhandledrejection', function(e) {
                     send('REJECTION', [String(e.reason)]);
                 });
+                // Intercept history navigation
+                var origBack = history.back.bind(history);
+                history.back = function() { send('HISTORY', ['back']); origBack(); };
+                var origGo = history.go.bind(history);
+                history.go = function(n) { send('HISTORY', ['go', n]); origGo(n); };
+                var origPush = history.pushState.bind(history);
+                history.pushState = function(s,t,u) { send('HISTORY', ['pushState', u]); origPush(s,t,u); };
+                var origReplace = history.replaceState.bind(history);
+                history.replaceState = function(s,t,u) { send('HISTORY', ['replaceState', u]); origReplace(s,t,u); };
+                window.addEventListener('popstate', function(e) { send('HISTORY', ['popstate', location.pathname]); });
+                // Intercept window.postMessage
+                var origPostMsg = window.postMessage.bind(window);
+                window.postMessage = function(data, origin) { send('POSTMSG', [JSON.stringify(data), origin]); origPostMsg(data, origin); };
+                window.addEventListener('message', function(e) {
+                    send('MSG_RECV', [JSON.stringify(e.data), e.origin]);
+                    try {
+                        var data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+                        if (data && data.action === 'closeWebView') {
+                            window.webkit.messageHandlers.tyradsClose.postMessage(null);
+                        }
+                    } catch(err) {}
+                });
+                // Proxy webkit messageHandlers
+                try {
+                    var realHandlers = window.webkit.messageHandlers;
+                    window.webkit.messageHandlers = new Proxy(realHandlers, {
+                        get: function(target, name) {
+                            if (name === 'tyradsLog' || name === 'tyradsClose') return target[name];
+                            return {
+                                postMessage: function(data) {
+                                    send('HANDLER', [name, JSON.stringify(data)]);
+                                    if (target[name]) target[name].postMessage(data);
+                                }
+                            };
+                        }
+                    });
+                } catch(e) {}
             })();
             """,
             injectionTime: .atDocumentStart,
