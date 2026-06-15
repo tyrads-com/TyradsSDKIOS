@@ -1,0 +1,13 @@
+/* Widget header */
+"data.widget.page.title" = "Top Offers";
+
+/* Widget buttons */
+"data.widget.button.moreOffers" = "More Offers";
+"data.widget.button.play" = "Play";
+"data.widget.button.continuePlaying" = "Continue Playing";
+
+/* Shared CTAs */
+"data.shared.cta.playNow" = "Play Now";
+
+/* Empty state */
+"data.widget.empty.noOffers" = "No offers available right now.\nCheck back later!";

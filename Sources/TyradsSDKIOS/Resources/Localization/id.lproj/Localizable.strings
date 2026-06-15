@@ -1,0 +1,13 @@
+/* Widget header */
+"data.widget.page.title" = "Penawaran Terbaik";
+
+/* Widget buttons */
+"data.widget.button.moreOffers" = "Lebih Banyak";
+"data.widget.button.play" = "Main";
+"data.widget.button.continuePlaying" = "Lanjut Main";
+
+/* Shared CTAs */
+"data.shared.cta.playNow" = "Main Sekarang";
+
+/* Empty state */
+"data.widget.empty.noOffers" = "Belum ada penawaran tersedia.\nCoba lagi nanti!";
