@@ -88,7 +88,7 @@ struct TyradsNotificationCardView<Content: View>: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 90, height: 90)
-                .offset(x: 36, y: -26)
+                .offset(x: 0, y: -26)
         }
     }
 }
