@@ -22,8 +22,10 @@ final class TyradsSessionStore: @unchecked Sendable {
     private var _publisherUserID: String
 
     private init() {
+        let deviceLanguage = Locale.preferredLanguages.first
+            .flatMap { Locale(identifier: $0).languageCode }
         _language = defaults.string(forKey: TyradsKeyNames.language)
-            ?? Locale.current.languageCode
+            ?? deviceLanguage
             ?? "en"
         _token = defaults.string(forKey: TyradsKeyNames.token) ?? ""
         _publisherUserID = defaults.string(forKey: TyradsKeyNames.userId) ?? ""
