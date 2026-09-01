@@ -22,8 +22,10 @@ struct TyradsLoginUserUseCase {
         let fallbackId = session.customAdvertisingId()
         async let adIdTask = advertisingId.resolve(fallbackId: fallbackId)
         async let deviceTask = deviceInfo.deviceDetails()
+        async let apnsTokenTask = TyradsAPNsManager.shared.waitForToken()
         let adId = await adIdTask
         let device = await deviceTask
+        let apnsToken = await apnsTokenTask
 
         var fd: [String: Any] = [
             "publisherUserId": params.userID,
@@ -33,7 +35,7 @@ struct TyradsLoginUserUseCase {
             "identifier": adId.identifier,
         ]
 
-        if let apnsToken = session.apnsToken {
+        if let apnsToken {
             fd["devicePushToken"] = apnsToken
         }
         if let eid = params.engagementId, !eid.isEmpty { fd["engagementId"] = Int(eid) }
