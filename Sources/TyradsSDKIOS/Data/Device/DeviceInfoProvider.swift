@@ -11,11 +11,12 @@ final class TyradsDeviceInfoProvider: TyradsDeviceInfoProviding {
         let networkDetails = await networkController.getNetworkDetails()
 
         // Device identifiers
+        let deviceType = device.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
         fd["deviceId"] = device.identifierForVendor?.uuidString ?? ""
-        fd["device"] = device.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+        fd["device"] = deviceType
         fd["deviceName"] = device.name
         fd["brand"] = "Apple"
-        fd["model"] = getModelIdentifier()
+        fd["model"] = deviceType
         fd["modelName"] = device.model
         fd["hardware"] = getModelIdentifier()
         fd["product"] = "Darwin"
@@ -29,7 +30,7 @@ final class TyradsDeviceInfoProvider: TyradsDeviceInfoProviding {
         fd["package"] = appBundle.bundleIdentifier ?? ""
         fd["apiVersion"] = TyradsSDKConfig.apiVersion
         fd["platform"] = "iOS"
-        fd["installerStore"] = "App Store"
+        fd["installerStore"] = getInstallerStore()
         fd["osLang"] = Locale.current.languageCode ?? "en"
 
         // Security
@@ -38,25 +39,13 @@ final class TyradsDeviceInfoProvider: TyradsDeviceInfoProviding {
 
         // Network
         fd["connectionType"] = networkDetails["connectionType"] ?? "Unknown"
-        fd["isVpnActive"] = networkDetails["isVpnActive"] ?? false
 
         // SDK info
         fd["sdkVersion"] = TyradsSDKConfig.sdkVersion
-        fd["sdkPlatform"] = TyradsSDKConfig.sdkPlatform
+        fd["sdkPlatform"] = "Swift"
 
         // Memory
-        fd["totalMemory"] = getTotalDiskSpace()
-
-        // Time
-        fd["timeZone"] = TimeZone.current.identifier
-        fd["timeZoneOffset"] = TimeZone.current.secondsFromGMT()
-        fd["systemTime"] = String(Int64(Date().timeIntervalSince1970 * 1000))
-
-        // Screen
-        let screen = UIScreen.main
-        fd["screenWidth"] = Int(screen.bounds.width * screen.scale)
-        fd["screenHeight"] = Int(screen.bounds.height * screen.scale)
-        fd["screenDensity"] = screen.scale
+        fd["totalMemory"] = getTotalMemoryGB()
 
         // Placeholder interaction metrics (iOS does not expose these natively)
         fd["keyboardNumEvents"] = 0
@@ -68,9 +57,9 @@ final class TyradsDeviceInfoProvider: TyradsDeviceInfoProviding {
         fd["touchNumEvents"] = 0
 
         // Capabilities
-        fd["gpu"] = getGPUInfo()
+        fd["gpu"] = "Unknown"
         fd["bluetooth"] = "Unknown"
-        fd["touchSupport"] = "true"
+        fd["touchSupport"] = "Unknown"
         fd["googleAppSetID"] = "Unknown"
 
         return fd
@@ -109,16 +98,23 @@ final class TyradsDeviceInfoProvider: TyradsDeviceInfoProviding {
         #endif
     }
 
-    private func getTotalDiskSpace() -> Int64 {
-        if let attrs = try? FileManager.default.attributesOfFileSystem(forPath: NSHomeDirectory()),
-           let size = attrs[.systemSize] as? Int64 {
-            return size
+    private func getInstallerStore() -> String {
+        guard let receiptURL = Bundle.main.appStoreReceiptURL else { return "Unknown" }
+        switch receiptURL.lastPathComponent {
+        case "receipt":
+            return "com.apple.appstore"
+        case "sandboxReceipt":
+            return FileManager.default.fileExists(atPath: receiptURL.path)
+                ? "com.apple.testflight"
+                : "com.apple.xcode"
+        default:
+            return "Unknown"
         }
-        return 0
     }
 
-    private func getGPUInfo() -> String {
-        // MTLDevice name not available without Metal import; use model-based inference
-        return getModelIdentifier()
+    private func getTotalMemoryGB() -> String {
+        let bytes = ProcessInfo.processInfo.physicalMemory
+        let gb = Double(bytes) / 1_073_741_824.0
+        return String(format: "%.2f", gb)
     }
 }
